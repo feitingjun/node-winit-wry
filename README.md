@@ -2,7 +2,7 @@
 在node端使用winit和wry创建webview窗口
 
 ## 创建窗口
-new Window(props: [WindowAttributes](#windowattributes))
+> new Window(props: [WindowAttributes](#windowattributes))
 
 ## 方法
 所有方法均为异步

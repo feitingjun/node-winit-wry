@@ -25,13 +25,13 @@ const IO_CHANNEL_PREFIX = '_ioc:';
 export class Window {
   /**window子进程 */
   static childProcess: ChildProcessWithoutNullStreams
-  childProcess: ChildProcessWithoutNullStreams
+  private childProcess: ChildProcessWithoutNullStreams
   /**给窗口发送消息的回调 */
-  callbacks: { [key: string]: Function } = {}
+  private callbacks: { [key: string]: Function } = {}
   /**窗口唯一标识 */
   label: string
   /**监听窗口事件 */
-  listeners: { [key: string]: Function[] } = {}
+  private listeners: { [key: string]: Function[] } = {}
   /**
    * 创建窗口
    * @param label 窗口唯一标识
