@@ -9,6 +9,7 @@ use std::io::{self, BufRead};
 use std::thread;
 use crate::window::Window;
 use crate::listen::{IO_CHANNEL_PREFIX, handle_listen};
+use crate::event::handle_window_event;
 
 pub enum Action {
   ForwardMessage(String)
@@ -16,7 +17,7 @@ pub enum Action {
 
 pub struct Application {
   is_resumed: bool,
-  windows: HashMap<String, Window>,
+  pub windows: HashMap<String, Window>,
   pub proxy: Option<EventLoopProxy<Action>>
 }
 
@@ -62,42 +63,37 @@ impl Application {
   pub fn close_window(&mut self, label: String){
     self.windows.remove(&label);
   }
-  pub fn create_new_window(&mut self, event_loop: &ActiveEventLoop, label: String, mut window_attr:WindowAttributes, webview_attr:WebViewAttributes) -> Result<WindowId, ()> {
+  pub fn create_new_window(&mut self, event_loop: &ActiveEventLoop, label: String, mut window_attr:WindowAttributes, webview_attr:WebViewAttributes) -> WindowId {
     if window_attr.inner_size.is_none() {
       window_attr = window_attr.with_inner_size(LogicalSize::new(800, 600));
     }
     let size = window_attr.inner_size.unwrap();
-    let window = event_loop.create_window(window_attr);
-    match window {
-      Ok(window) => {
-        // 直接使用WebViewBuilder::new()创建的webview会导致winit窗口崩溃，需要创建child webview
-        let mut webview_uilder = WebViewBuilder::new_as_child(&window)
-          .with_bounds(Rect{
-            position: LogicalPosition::new(0.0, 0.0).into(),
-            size: size,
-          });
-        if webview_attr.url.is_some() {
-          webview_uilder = webview_uilder.with_url(webview_attr.url.unwrap());
-        }
-        webview_uilder = webview_uilder.with_transparent(webview_attr.transparent);
-        if webview_attr.background_color.is_some() {
-          webview_uilder = webview_uilder.with_background_color(webview_attr.background_color.unwrap());
-        }
-        if webview_attr.html.is_some() {
-          webview_uilder = webview_uilder.with_html(webview_attr.html.unwrap());
-        }
-        webview_uilder = webview_uilder.with_devtools(webview_attr.devtools);
-        webview_uilder = webview_uilder.with_autoplay(webview_attr.autoplay);
-        let webview = webview_uilder.build().unwrap();
-        let id = window.id();
-        self.windows.insert(label.clone(), Window::new(label, window, webview, id));
-        Ok(id)
-      },
-      Err(e) => {
-        println!("创建窗口错误: {:?}", e);
-        Err(())
-      }
+    let window = event_loop.create_window(window_attr).unwrap();
+
+    // 直接使用WebViewBuilder::new()创建的webview会导致winit窗口崩溃，需要创建child webview
+    let mut webview_uilder = WebViewBuilder::new_as_child(&window)
+      .with_bounds(Rect{
+        position: LogicalPosition::new(0.0, 0.0).into(),
+        size: size,
+      });
+    if webview_attr.url.is_some() {
+      webview_uilder = webview_uilder.with_url(webview_attr.url.unwrap());
     }
+    if webview_attr.background_color.is_some() {
+      webview_uilder = webview_uilder.with_background_color(webview_attr.background_color.unwrap());
+    }
+    if webview_attr.html.is_some() {
+      webview_uilder = webview_uilder.with_html(webview_attr.html.unwrap());
+    }
+    webview_uilder = webview_uilder
+      .with_transparent(webview_attr.transparent)
+      .with_devtools(webview_attr.devtools)
+      .with_autoplay(webview_attr.autoplay);
+    
+    let webview = webview_uilder.build().unwrap();
+    let id = window.id();
+    self.windows.insert(label.clone(), Window::new(label, window, webview, id));
+    id
   }
 }
 
@@ -122,30 +118,7 @@ impl ApplicationHandler<Action> for Application {
     window_id: WindowId,
     event: WindowEvent,
   ) {
-    match event {
-      WindowEvent::CloseRequested => {
-        let windows = self.windows.values();
-        // 如果只有一个窗口，直接退出进程
-        if windows.len() == 1 {
-          event_loop.exit();
-          return;
-        }
-        // 找出当前的窗口
-        let mut close_label: Option<String> = None;
-        for w in windows.clone() {
-          if w.id() == window_id {
-            close_label = Some(w.label.clone());
-            break;
-          }
-        }
-        // 关闭窗口
-        if close_label.is_some() {
-          self.close_window(close_label.unwrap());
-        } 
-        
-      }
-      _ => (),
-    }
+    handle_window_event(self, event_loop, window_id, event);
   }
   // fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
   //   use std::time;

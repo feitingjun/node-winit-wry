@@ -8,12 +8,14 @@ import {
   WindowAttributes,
   MessageMethodKey,
   Position,
-  WindowButtons,
-  Fullscreen,
+  WindowButton,
+  Monitor,
   UserAttentionType,
   Theme,
   Size,
-  ResizeDirection
+  ResizeDirection,
+  WindowEvent,
+  WindowId
 } from './types'
 import { ChildProcessWithoutNullStreams } from 'child_process'
 import { uid, getPlatform } from './utils'
@@ -21,10 +23,15 @@ import { uid, getPlatform } from './utils'
 const IO_CHANNEL_PREFIX = '_ioc:';
 
 export class Window {
+  /**window子进程 */
   static childProcess: ChildProcessWithoutNullStreams
   childProcess: ChildProcessWithoutNullStreams
+  /**给窗口发送消息的回调 */
   callbacks: { [key: string]: Function } = {}
+  /**窗口唯一标识 */
   label: string
+  /**监听窗口事件 */
+  listeners: { [key: string]: Function[] } = {}
   /**
    * 创建窗口
    * @param label 窗口唯一标识
@@ -42,8 +49,83 @@ export class Window {
     this.event()
   }
   /**创建窗口 */
-  private create(props?: WindowAttributes) {
-    return this.send('create', props)
+  private async create(props?: WindowAttributes) {
+    let id = await this.send('create', props)
+    this.listeners['created']?.forEach((cb) => cb(id))
+    return id
+  }
+  /**监听窗口事件 */
+  on<T extends keyof WindowEvent>(event:T, callback:(data: WindowEvent[T]) => void){
+    if(!this.listeners[event]){
+      this.listeners[event] = []
+    }
+    this.listeners[event].push(callback)
+    return () => this.off(event, callback)
+  }
+  /**监听一次窗口事件 */
+  once(event:keyof WindowEvent, callback:Function){
+    if(!this.listeners[event]){
+      this.listeners[event] = []
+    }
+    this.listeners[event].push((...args) => {
+      callback(...args)
+      this.off(event, callback)
+    })
+  }
+  /**窗口创建完成 */
+  onCreated(callback:(id:WindowId) => void){
+    return this.on('created', callback)
+  }
+  /**监听窗口移动 */
+  onMove(callback:(data:Position) => void){
+    return this.on('move', callback)
+  }
+  /**监听窗口关闭 */
+  onClose(callback:() => void){
+    return this.on('close', callback)
+  }
+  /**监听窗口销毁 */
+  onDestroy(callback:() => void){
+    return this.on('destroy', callback)
+  }
+  /**监听窗口失去焦点 */
+  onBlur(callback:() => void){
+    return this.on('blur', callback)
+  }
+  /**监听窗口获得焦点 */
+  onFocus(callback:() => void){
+    return this.on('focus', callback)
+  }
+  /**监听窗口光标移动 */
+  onCursorMove(callback:(data:Position) => void){
+    return this.on('cursorMove', callback)
+  }
+  /**监听窗口光标进入 */
+  onCursorEnter(callback:() => void){
+    return this.on('cursorEnter', callback)
+  }
+  /**监听窗口光标离开 */
+  onCursorOut(callback:() => void){
+    return this.on('cursorOut', callback)
+  }
+  /**监听窗口主题改变 */
+  onTheme(callback:(data:Theme) => void){
+    return this.on('theme', callback)
+  }
+  /**监听窗口被遮挡(关闭、最小化、设置为不可见或被其他窗口遮挡) */
+  onOccluded(callback:(data:boolean) => void){
+    return this.on('occluded', callback)
+  }
+  /**监听窗口大小改变 */
+  onResize(callback:(data:Size) => void){
+    return this.on('resize', callback)
+  }
+  /**取消监听窗口事件 */
+  private off(event:keyof WindowEvent, callback:Function){
+    if(!this.listeners[event]){
+      return
+    }
+    this.listeners[event] = this.listeners[event].filter(item => item !== callback)
   }
   /**关闭窗口 */
   close() {
@@ -85,6 +167,10 @@ export class Window {
   /**设置webview缩放等级 */
   zoom(scale: number) {
     return this.send('zoom', scale)
+  }
+  /**获取当前窗口的缩放因子(屏幕的缩放因子可以通过monitors方法获取) */
+  scaleFactor() {
+    return this.send('scale_factor')
   }
   /**清除webview浏览数据 */
   clear_all_browsing_data() {
@@ -155,7 +241,7 @@ export class Window {
     return this.send('is_resizable')
   }
   /**设置启用的窗口按钮 */
-  setEnabledButtons(buttons: WindowButtons[] = ['close', 'maximize', 'minimize']) {
+  setEnabledButtons(buttons: WindowButton[] = ['close', 'maximize', 'minimize']) {
     return this.send('set_enabled_buttons', buttons)
   }
   /**获取启用的窗口按钮 */
@@ -184,21 +270,33 @@ export class Window {
   }
   /**获取窗口是否最大化 */
   isMaximized() {
-    return this.send('set_maximized', false)
+    return this.send('is_maximized')
   }
   /**获取显示器列表(返回显示器id列表) */
   monitors() {
     return this.send('get_monitor_list')
   }
+  /**获取当前显示器id */
+  currentMonitor() {
+    return this.send('current_monitor')
+  }
+  /**获取主显示器id */
+  primaryMonitor() {
+    return this.send('primary_monitor')
+  }
   /**
    * 设置窗口全屏
    * 
    ** monitorId 为 null | undefined 时在当前窗口全屏
-   ** 传入显示器id则在指定显示器全屏
-   ** 显示器id通过monitors方法获取
+   ** 传入monitorId则在指定显示器全屏
+   ** monitorId通过monitors方法获取
   */
-  fullscreen(monitorId?: Fullscreen) {
-    return this.send('set_fullscreen', monitorId ?? null)
+  fullscreen(monitorId?: null | Monitor['monitorId']) {
+    return this.send('fullscreen', monitorId ?? null)
+  }
+  /**取消全屏 */
+  unfullscreen() {
+    return this.send('unfullscreen')
   }
   /**
    * 获取窗口是否全屏
@@ -208,7 +306,7 @@ export class Window {
    ** 返回 false 表示未全屏
    */
   isFullscreen() {
-    return this.send('fullscreen')
+    return this.send('is_fullscreen')
   }
   /**设置窗口是否无边框，默认 true 为无边框 */
   borderless(borderless: boolean = true) {
@@ -286,30 +384,41 @@ export class Window {
   showMenu(position: Position) {
     return this.send('show_window_menu', position)
   }
-  private send<T extends MessageMethodKey>(method: T, data?: MessageMethodParams<T>): Promise<MessageMethodResponse<T>> {
+  private send<T extends MessageMethodKey>(method: T, data?: MessageMethodParams<T>): Promise<MessageMethodResponse<T> extends never ? void : MessageMethodResponse<T>> {
     return new Promise((resolve, reject) => {
       const id = uid()
-      const callback = (data: MessageMethodResponse<T>) => {
+      const callback = (data: MessageMethodResponse<T> extends never ? void : MessageMethodResponse<T>) => {
         resolve(data)
       }
       this.callbacks[id] = callback
       this.emit({ id, method, data, label: this.label })
     })
   }
-  emit<T extends MessageMethodKey>(msg: SendMessage<T>) {
+  private emit<T extends MessageMethodKey>(msg: SendMessage<T>) {
     this.childProcess.stdin.write(`${IO_CHANNEL_PREFIX}${JSON.stringify(msg)}` + '\n')
   }
-  event<T extends MessageMethodKey>() {
+  private event() {
     this.childProcess.stdout.on('data', (data) => {
-      try {
-        let msg: ReceiveMessage<T> = JSON.parse(data.toString().replace(IO_CHANNEL_PREFIX, ''))
-        if (msg.label !== this.label) return
-        console.log(msg)
-        const callback = this.callbacks[msg.id]
-        if (callback) callback(msg.data)
-      } catch (e) {
-        console.error(`响应消息格式错误：${data.toString()}`)
-      }
+      let str:string = data.toString()
+      str?.split('\n').forEach((item) => {
+        if (!item) return
+        try {
+          let msg: ReceiveMessage<MessageMethodKey|keyof WindowEvent> = JSON.parse(item.replace(IO_CHANNEL_PREFIX, ''))
+          if (msg.label !== this.label) return
+          // 处理响应
+          if (msg.type === 'response'){
+            const callback = this.callbacks[msg.id]
+            if (callback) callback(msg.data)
+          }
+          // 处理窗口事件
+          else if(msg.type === 'windowEvent'){
+            const callbacks = this.listeners[msg.method]??[]
+            callbacks.forEach(cb => cb(msg.data))
+          }
+        } catch (e) {
+          console.error(`响应消息格式错误：${item}`)
+        }
+      })
     })
   }
 }

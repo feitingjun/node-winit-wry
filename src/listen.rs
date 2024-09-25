@@ -11,8 +11,21 @@ use wry::WebViewAttributes;
 
 pub const IO_CHANNEL_PREFIX: &str = "_ioc:";
 
+// 获取显示器信息
+fn get_monitor_info(monitor:MonitorHandle) -> Value {
+  let mut data = Map::new();
+  let scale_factor = monitor.scale_factor();
+  let name = monitor.name().unwrap();
+  let monitor_id:Number = name["Monitor #".len()..].parse().unwrap();
+  data.insert("width".to_string(), monitor.size().width.into());
+  data.insert("height".to_string(), monitor.size().height.into());
+  data.insert("scaleFactor".to_string(), Value::Number(Number::from_f64(scale_factor).unwrap()));
+  data.insert("monitorId".to_string(), Value::Number(monitor_id));
+  Value::Object(data)
+}
+
 // 发送IO消息
-fn send_io_message(msg: Value) {
+pub fn send_io_message(msg: Value) {
   let json_str = serde_json::to_string(&msg).unwrap();
   // 创建一个输出流
   let mut output = io::stdout();
@@ -54,6 +67,7 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
   response.insert("id".to_string(), Value::String(id.to_string()));
   response.insert("label".to_string(), Value::String(label.to_string()));
   response.insert("method".to_string(), Value::String(method.to_string()));
+  response.insert("type".to_string(), Value::String("response".to_string()));
 
   match method {
     "create" => {
@@ -278,16 +292,9 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
         }
       }
       let window_id = app.create_new_window(event_loop, label.to_string(), window_attr, webview_attr);
-      match window_id {
-        Ok(id) => {
-          let id:u64 = id.into();
-          response.insert("data".to_string(), Value::Number(Number::from(id)));
-          send_io_message(Value::Object(response));
-        },
-        Err(_) => {
-          
-        }
-      }
+      let id:u64 = window_id.into();
+      response.insert("data".to_string(), Value::Number(Number::from(id)));
+      send_io_message(Value::Object(response));
     },
     "set_url" => {
       if data.is_string() {
@@ -352,6 +359,13 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
           let _ = window.zoom(data);
           send_io_message(Value::Object(response));
         }
+      }
+    },
+    "scale_factor" => {
+      if let Some(window) = window {
+        let scale_factor = window.scale_factor();
+        response.insert("data".to_string(), Value::Number(Number::from_f64(scale_factor).unwrap()));
+        send_io_message(Value::Object(response));
       }
     },
     "clear_all_browsing_data" => {
@@ -594,18 +608,34 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
         send_io_message(Value::Object(response));
       }
     },
+    "current_monitor" => {
+      if let Some(window) = window {
+        let monitor = window.current_monitor();
+        if let Some(monitor) = monitor {
+          let data = get_monitor_info(monitor.clone());
+          response.insert("data".to_string(), data);
+        }
+        send_io_message(Value::Object(response));
+      }
+    },
+    "primary_monitor" => {
+      let primary = event_loop.primary_monitor();
+      if let Some(monitor) = primary {
+        let data = get_monitor_info(monitor.clone());
+        response.insert("data".to_string(), data);
+      }
+      send_io_message(Value::Object(response));
+    },
     "get_monitor_list" => {
       let monitors = event_loop.available_monitors();
       let mut data = Vec::new();
       for monitor in monitors {
-        let name = monitor.name().unwrap();
-        let monitor_id:Number = name["Monitor #".len()..].parse().unwrap();
-        data.push(Value::Number(monitor_id));
+        data.push(get_monitor_info(monitor.clone()));
       }
       response.insert("data".to_string(), Value::Array(data));
       send_io_message(Value::Object(response));
     },
-    "set_fullscreen" => {
+    "fullscreen" => {
       if data.is_number() || data.is_null() {
         if let Some(window) = window {
           let mut monitor:Option<MonitorHandle> = None;
@@ -625,7 +655,13 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
         }
       }
     },
-    "fullscreen" => {
+    "unfullscreen" => {
+      if let Some(window) = window {
+        window.set_fullscreen(None);
+        send_io_message(Value::Object(response));
+      }
+    },
+    "is_fullscreen" => {
       if let Some(window) = window {
         let fullscreen = window.fullscreen();
         if let Some(Fullscreen::Borderless(monitor)) = fullscreen {

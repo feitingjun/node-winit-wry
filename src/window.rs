@@ -3,18 +3,25 @@ use winit::window::{Window as WinitWindow, WindowId, WindowButtons, Fullscreen, 
 use wry::WebView;
 use winit::dpi::{PhysicalPosition, PhysicalSize, Position, Size};
 use winit::error::NotSupportedError;
+use winit::monitor::MonitorHandle;
 use std::path::Path;
 use image::GenericImageView;
 
+#[derive(Clone)]
 pub struct Window {
   pub label: String,
-  window: Arc<WinitWindow>,
+  pub window: Arc<WinitWindow>,
   webview: Arc<WebView>,
   id: WindowId
 }
 
 impl Window{
-  pub fn new (label: String, window:WinitWindow, webview: WebView, id: WindowId) -> Self {
+  pub fn new (
+    label: String,
+    window:WinitWindow,
+    webview: WebView,
+    id: WindowId
+  ) -> Self {
     Self {
       label,
       window: Arc::new(window),
@@ -60,6 +67,9 @@ impl Window{
   // 设置webview缩放级别
   pub fn zoom(&self, scale_factor: f64) {
     let _ = self.webview.zoom(scale_factor);
+  }
+  pub fn scale_factor(&self) -> f64 {
+    self.window.scale_factor()
   }
   // 清除所有浏览数据
   pub fn clear_all_browsing_data(&self) {
@@ -213,5 +223,9 @@ impl Window{
   // 在指定的位置显示窗口菜单
   pub fn show_window_menu(&self, position: impl Into<Position>) {
     self.window.show_window_menu(position);
+  }
+  // 获取当前显示器
+  pub fn current_monitor(&self) -> Option<MonitorHandle> {
+    self.window.current_monitor()
   }
 }
