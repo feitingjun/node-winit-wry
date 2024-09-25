@@ -1,5 +1,6 @@
-# node-winit-wry
-在node端使用winit和wry创建webview窗口
+# [node-winit-wry](https://github.com/feitingjun/node-winit-wry)
+在node端使用winit和wry创建webview窗口  
+https://github.com/feitingjun/node-winit-wry
 
 ## 创建窗口
 > new Window(props: [WindowAttributes](#windowattributes))
