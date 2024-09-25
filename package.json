@@ -9,7 +9,7 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "在node端使用winit和wry窗口webview窗口",
   "devDependencies": {
     "@types/node": "^22.5.5",
     "tsc": "^2.0.4",
