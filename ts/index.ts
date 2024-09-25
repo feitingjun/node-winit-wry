@@ -63,12 +63,12 @@ export class Window {
     return () => this.off(event, callback)
   }
   /**监听一次窗口事件 */
-  once(event:keyof WindowEvent, callback:Function){
+  once<T extends keyof WindowEvent>(event:T, callback:(data: WindowEvent[T]) => void){
     if(!this.listeners[event]){
       this.listeners[event] = []
     }
-    this.listeners[event].push((...args) => {
-      callback(...args)
+    this.listeners[event].push((args) => {
+      callback(args)
       this.off(event, callback)
     })
   }
@@ -139,7 +139,7 @@ export class Window {
   url() {
     return this.send('url')
   }
-  /**在webview上执行js代码 */
+  /**在webview内执行js代码 */
   evaluateScript(script: string) {
     return this.send('evaluate_script', script)
   }
@@ -173,14 +173,14 @@ export class Window {
     return this.send('scale_factor')
   }
   /**清除webview浏览数据 */
-  clear_all_browsing_data() {
+  clearAllBrowsingData() {
     return this.send('clear_all_browsing_data')
   }
-  /**设置webview背景色(macOS/iOS不支持) */
+  /**设置webview背景色(macOS不支持) */
   setBackgroundColor(color: [number, number, number, number]) {
     return this.send('set_background_color', color)
   }
-  /**返回窗口客户区左上角相对于桌面左上角的位置 */
+  /**返回窗口客户区域(不包含边框和标题栏)左上角相对于桌面左上角的位置 */
   innerPosition() {
     return this.send('inner_position')
   }
@@ -216,11 +216,11 @@ export class Window {
   title() {
     return this.send('title')
   }
-  /**设置窗口是否透明 */
+  /**设置窗口是否透明(如果要实现透明窗口效果需要将webview的背景也设置为透明) */
   setTransparent(transparent: boolean = true) {
     return this.send('set_transparent', transparent)
   }
-  /**更改窗口模糊状态 */
+  /**更改窗口模糊状态(透明窗口毛玻璃效果) */
   setBlur(blur: boolean = true) {
     return this.send('set_blur', blur)
   }
@@ -228,7 +228,7 @@ export class Window {
   setVisible(visible: boolean) {
     return this.send('set_visible', visible)
   }
-  /**获取窗口是否可见 */
+  /**获取窗口的可见性 */
   isVisible() {
     return this.send('is_visible')
   }
@@ -248,7 +248,7 @@ export class Window {
   enabledButtons() {
     return this.send('enabled_buttons')
   }
-  /**窗口最小化 */
+  /**最小化窗口 */
   minimized() {
     return this.send('set_minimized', true)
   }
@@ -272,15 +272,15 @@ export class Window {
   isMaximized() {
     return this.send('is_maximized')
   }
-  /**获取显示器列表(返回显示器id列表) */
+  /**获取显示器列表 */
   monitors() {
     return this.send('get_monitor_list')
   }
-  /**获取当前显示器id */
+  /**获取当前显示器 */
   currentMonitor() {
     return this.send('current_monitor')
   }
-  /**获取主显示器id */
+  /**获取主显示器*/
   primaryMonitor() {
     return this.send('primary_monitor')
   }
@@ -289,7 +289,7 @@ export class Window {
    * 
    ** monitorId 为 null | undefined 时在当前窗口全屏
    ** 传入monitorId则在指定显示器全屏
-   ** monitorId通过monitors方法获取
+   ** monitorId可通过monitors方法获取
   */
   fullscreen(monitorId?: null | Monitor['monitorId']) {
     return this.send('fullscreen', monitorId ?? null)
@@ -328,7 +328,7 @@ export class Window {
   setIcon(icon: string) {
     return this.send('set_window_icon', icon)
   }
-  /**窗口聚焦 */
+  /**聚焦窗口 */
   focus() {
     return this.send('focus_window')
   }

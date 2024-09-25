@@ -22,7 +22,7 @@ export type WindowLevel = 'normal' | 'alwaysOnTop' | 'alwaysOnBottom'
  * 请求用户注意窗口
  *
  * critical
- ** Windows 同时闪烁窗口和任务栏按钮，直到应用程序进入焦点
+ ** Windows 同时闪烁窗口和任务栏按钮，直到应用程序处于焦点位置
  ** MacOS 弹出dock图标，直到应用程序处于焦点位置
  *
  * informational
