@@ -2,8 +2,23 @@
 在node端使用winit和wry创建webview窗口  
 https://github.com/feitingjun/node-winit-wry
 
+## 使用方法
+```
+import { Window, getWindow } from 'node-winit-wry'
+
+const win = new Window('main')
+
+win.onCreated((windowId) => {
+  console.log('窗口创建成功')
+})
+
+```
+
 ## 创建窗口
 > new Window(props: [WindowAttributes](#windowattributes))
+
+## 获取已有窗口
+> getWindow(label: string): [Window](#创建窗口)
 
 ## 方法
 所有方法均为异步
