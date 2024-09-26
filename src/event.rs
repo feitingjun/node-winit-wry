@@ -2,6 +2,7 @@ use crate::application::Application;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 use winit::event::WindowEvent;
+use winit::dpi::Size;
 use serde_json::{Map, Value};
 use crate::listen::send_io_message;
 
@@ -87,6 +88,7 @@ pub fn handle_window_event(
       send_io_message(Value::Object(response));
     },
     WindowEvent::Resized(size) => {
+      window.resize(Size::Physical(size));
       response.insert("method".to_string(), Value::String("resize".to_string()));
       let mut data = Map::new();
       data.insert("width".to_string(), size.width.into());

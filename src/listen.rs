@@ -293,7 +293,7 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
       }
       let window_id = app.create_new_window(event_loop, label.to_string(), window_attr, webview_attr);
       let id:u64 = window_id.into();
-      response.insert("data".to_string(), Value::Number(Number::from(id)));
+      response.insert("data".to_string(), Value::String(id.to_string()));
       send_io_message(Value::Object(response));
     },
     "set_url" => {
@@ -438,6 +438,22 @@ pub fn handle_listen(app:&mut Application, str:&str, event_loop: &ActiveEventLoo
         data.insert("height".to_string(), size.height.into());
         response.insert("data".to_string(), Value::Object(data));
         send_io_message(Value::Object(response));
+      }
+    },
+    "set_inner_size" => {
+      if data.is_object() {
+        let data = data.as_object().unwrap();
+        if let Some(window) = window {
+          let size = LogicalSize::new(data.get("width").unwrap().as_f64().unwrap(), data.get("height").unwrap().as_f64().unwrap());
+          let size = window.set_inner_size(Size::Logical(size));
+          if let Some(size) = size {
+            let mut data = Map::new();
+            data.insert("width".to_string(), size.width.into());
+            data.insert("height".to_string(), size.height.into());
+            response.insert("data".to_string(), Value::Object(data));
+          }
+          send_io_message(Value::Object(response));
+        }
       }
     },
     "outer_size" => {

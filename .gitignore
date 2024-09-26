@@ -3,3 +3,5 @@
 /dist
 /package-lock.json
 /Cargo.lock
+/binary
+/ts/node-winit-wry

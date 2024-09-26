@@ -69,7 +69,6 @@ impl Application {
     }
     let size = window_attr.inner_size.unwrap();
     let window = event_loop.create_window(window_attr).unwrap();
-
     // 直接使用WebViewBuilder::new()创建的webview会导致winit窗口崩溃，需要创建child webview
     let mut webview_uilder = WebViewBuilder::new_as_child(&window)
       .with_bounds(Rect{
@@ -89,7 +88,7 @@ impl Application {
       .with_transparent(webview_attr.transparent)
       .with_devtools(webview_attr.devtools)
       .with_autoplay(webview_attr.autoplay);
-    
+
     let webview = webview_uilder.build().unwrap();
     let id = window.id();
     self.windows.insert(label.clone(), Window::new(label, window, webview, id));

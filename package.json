@@ -1,10 +1,11 @@
 {
   "name": "node-winit-wry",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "scripts": {
-    "start": "tsx test.ts",
-    "build": "./build.sh",
+    "start": "tsx ./test/index.ts",
+    "build": "cargo build --target x86_64-apple-darwin --release && mv target/x86_64-apple-darwin/release/node-winit-wry ts/node-winit-wry",
+    "builds": "./build.sh",
     "tsc": "tsc"
   },
   "author": "",

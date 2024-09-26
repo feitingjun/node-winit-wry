@@ -36,9 +36,9 @@ export type ResizeDirection = 'east' | 'north' | 'northEast' | 'northWest' | 'so
 
 /**创建窗口的参数 */
 export interface WindowAttributes {
-  /**webview URL */
+  /**webview加载的URL(如需加载本地html文件，需使用加上 file: 前缀) */
   url?: string
-  /**webview HTML */
+  /**webview加载的html内容(不是html文件路径) */
   html?: string
   /**webview的背景色(MacOS不支持) */
   backgroundColor?: [number, number, number, number]
@@ -153,6 +153,11 @@ export interface MessageMethod {
   }
   /**返回窗口客户端区域的物理大小(不包括标题栏和边框) */
   inner_size: {
+    response: Size
+  }
+  /**设置窗口尺寸 */
+  set_inner_size: {
+    params: Size
     response: Size
   }
   /**返回整个窗口的物理大小 */
@@ -327,10 +332,10 @@ export interface SendMessage<T extends MessageMethodKey> {
   data?: MessageMethodParams<T>
 }
 /**接受窗口进程发送的消息格式 */
-export interface ReceiveMessage<T> {
+export interface ReceiveMessage {
   id?: string
-  type: T extends MessageMethodKey ? 'response' : 'windowEvent'
+  type: 'response' | 'windowEvent'
   method: T
   label: string
-  data?: T extends MessageMethodKey ? MessageMethodResponse<T> : WindowEvent[T]
+  data?: any
 }

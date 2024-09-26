@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use winit::window::{Window as WinitWindow, WindowId, WindowButtons, Fullscreen, WindowLevel, UserAttentionType, Theme, ResizeDirection};
 use wry::WebView;
+use wry::dpi::LogicalPosition;
+use wry::Rect;
 use winit::dpi::{PhysicalPosition, PhysicalSize, Position, Size};
 use winit::error::NotSupportedError;
 use winit::monitor::MonitorHandle;
@@ -11,7 +13,7 @@ use image::GenericImageView;
 pub struct Window {
   pub label: String,
   pub window: Arc<WinitWindow>,
-  webview: Arc<WebView>,
+  pub webview: Arc<WebView>,
   id: WindowId
 }
 
@@ -94,6 +96,10 @@ impl Window{
   // 返回窗口客户端区域的物理大小(不包括标题栏和边框)
   pub fn inner_size(&self) -> PhysicalSize<u32> {
     self.window.inner_size()
+  }
+  // 设置窗口客户端区域的物理大小
+  pub fn set_inner_size<S: Into<Size>>(&self, size: S) -> Option<PhysicalSize<u32>> {
+    self.window.request_inner_size(size)
   }
   // 返回整个窗口的物理大小
   pub fn outer_size(&self) -> PhysicalSize<u32> {
@@ -227,5 +233,12 @@ impl Window{
   // 获取当前显示器
   pub fn current_monitor(&self) -> Option<MonitorHandle> {
     self.window.current_monitor()
+  }
+  // 更改webview的大小
+  pub fn resize(&self, size: Size) {
+    let _ = self.webview.set_bounds(Rect{
+      position: LogicalPosition::new(0.0, 0.0).into(),
+      size
+    });
   }
 }

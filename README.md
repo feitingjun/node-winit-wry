@@ -10,6 +10,8 @@ https://github.com/feitingjun/node-winit-wry
 
 ### on
 注册窗口事件监听   
+响应的是操作系统发出的事件，使用API变更窗口状态不会触发       
+
 [WindowEvent](#windowevent)内的所有方法都有别名，如winodw.on('close')可以使用window.onClose
 > on\<T extends keyof [WindowEvent](#windowevent)\>(event:T, callback:(data: [WindowEvent](#windowevent)[T]) => void): void
 
@@ -68,6 +70,11 @@ https://github.com/feitingjun/node-winit-wry
 ### innerSize
 返回窗口客户端区域的物理大小(不包括标题栏和边框)
 > innerSize(): Promise\<[Size](#size)\>
+
+### setInnerSize
+设置窗口尺寸  
+返回新的窗口尺寸，如果窗口不允许调整大小，则返回原尺寸
+> setInnerSize(size: [Size](#size)): Promise\<[Size](#size)\>
 
 ### outerSize
 返回整个窗口的物理大小
