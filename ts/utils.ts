@@ -2,8 +2,9 @@ import { platform, arch, cwd } from 'process'
 import { existsSync, createWriteStream } from 'fs'
 import { join } from 'path'
 import { get } from 'https'
+import { IncomingMessage } from 'http'
 
-const URL = 'https://github.com/feitingjun/node-winit-wry/releases/download'
+const URL = 'https://github.com/feitingjun/node-winit-wry/releases/latest/download'
 const suffix = platform.indexOf('windows') > -1 ? '.exe' : ''
 
 /**生成一个id */
@@ -39,45 +40,44 @@ export const getPlatform = () => {
   }
   return ARCH + '-' + SYS
 }
-
 // 下载二进制文件
-const downloadBinary = async (filename: string) => {
-  const gitfilename = getPlatform()
-  // 获取版本
-  const version = require(join(__dirname, '../package.json')).version
-  const url = `${URL}/v${version}/${gitfilename}${suffix}`
-  const location = await new Promise((resolve, reject) => {
+const writeFile = async (res: IncomingMessage, filename: string) => {
+  return new Promise((resolve, reject) => {
+    if(res.statusCode === 200){
+      let stream = createWriteStream(join(__dirname, filename), { mode: 0o755 })
+      res.pipe(stream)
+      stream.on('finish', () => {
+        stream.close();
+        resolve(true)
+      })
+      stream.on('error', (err) => {
+        console.error('写入文件错误:', err)
+        reject(err)
+      })
+    }
+  })
+}
+// 下载二进制文件
+const getBinary = (url: string):Promise<IncomingMessage> => {
+  return new Promise((resolve, reject) => {
     get(url, (res) => {
-      if(res.statusCode === 302) {
-        resolve(res.headers.location)
+      if(res.statusCode === 200){
+        resolve(res)
+      }else if(res.statusCode === 302) {
+        getBinary(res.headers.location).then(resolve).catch(reject)
       }else{
-        console.error('获取下载地址错误', res)
+        console.error('下载二进制文件失败', res)
         reject(new Error('下载错误'))
       }
-    })
-  })
-  return new Promise((resolve, reject) => {
-    get(location, (res) => {
-      if(res.statusCode === 200){
-        let stream = createWriteStream(join(__dirname, filename + suffix), { mode: 0o755 })
-        res.pipe(stream)
-        stream.on('finish', () => {
-          stream.close();
-          resolve(true)
-        })
-        stream.on('error', (err) => {
-          console.error('写入文件错误:', err)
-          reject(err)
-        })
-      }
     }).on('error', (err) => {
-      console.error('下载错误:', err)
+      console.error('下载二进制文件失败', err)
       reject(err)
     })
   })
 }
 // 获取二进制文件路径
 export const getBinaryPath = async () => {
+  // 写入的本地二进制文件名称
   let filename = 'app'
   // @ts-ignore
   if (process.pkg){
@@ -87,10 +87,14 @@ export const getBinaryPath = async () => {
     const path = join(cwd(), 'package.json')
     filename = (await import(path)).name
   }
+  filename = filename + suffix
   // 判断文件是否存在
   if (!existsSync(join(__dirname, filename))){
     // 下载二进制文件
-    await downloadBinary(filename)
+    const gitfilename = getPlatform()
+    const url = `${URL}/${gitfilename}${suffix}`
+    const res = await getBinary(url)
+    await writeFile(res, filename)
   }
-  return join(__dirname, filename+suffix)
+  return join(__dirname, filename)
 }
