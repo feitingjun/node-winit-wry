@@ -2,6 +2,10 @@
   "name": "node-winit-wry",
   "version": "0.2.0",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feitingjun/node-winit-wry"
+  },
   "scripts": {
     "start": "tsx ./test/index.ts",
     "build": "cargo build --target x86_64-apple-darwin --release && mv target/x86_64-apple-darwin/release/node-winit-wry ts/node-winit-wry",
