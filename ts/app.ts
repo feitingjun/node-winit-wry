@@ -51,7 +51,7 @@ export default class App {
         if (callback) callback(msg.data)
         break
       case 'windowEvent':
-        const listeners = this.listeners[msg.label][msg.method]??[]
+        const listeners = this.listeners[msg.label]?.[msg.method]??[]
         listeners.forEach(cb => cb(msg.data))
         break
     }
@@ -81,6 +81,6 @@ export default class App {
   off(label, event, callback){
     if(!this.listeners[label]) return
     if(!this.listeners[label][event]) return
-    this.listeners[label][event] = this.listeners[label][event].filter(item => item !== callback)
+    this.listeners[label][event] = this.listeners[label]?.[event]?.filter(item => item !== callback)
   }
 }
