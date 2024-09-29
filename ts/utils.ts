@@ -7,6 +7,13 @@ import { IncomingMessage } from 'http'
 const URL = 'https://github.com/feitingjun/node-winit-wry/releases/latest/download'
 const suffix = platform.indexOf('windows') > -1 ? '.exe' : ''
 
+const consoleGreen = (...args) => {
+  console.log('\x1b[32m', ...args, '\x1b[0m')
+}
+const consoleRed = (...args) => {
+  console.log('\x1b[31m', ...args, '\x1b[0m')
+}
+
 /**生成一个id */
 export const uid = () => {
   return new Date().getTime() + '' + Math.floor(Math.random() * 100000)
@@ -66,11 +73,11 @@ const getBinary = (url: string):Promise<IncomingMessage> => {
       }else if(res.statusCode === 302) {
         getBinary(res.headers.location).then(resolve).catch(reject)
       }else{
-        console.error('下载二进制文件失败', res)
+        consoleRed('下载二进制文件失败', res)
         reject(new Error('下载错误'))
       }
     }).on('error', (err) => {
-      console.error('下载二进制文件失败', err)
+      consoleRed('下载二进制文件失败', err)
       reject(err)
     })
   })
@@ -93,8 +100,10 @@ export const getBinaryPath = async () => {
     // 下载二进制文件
     const gitfilename = getPlatform()
     const url = `${URL}/${gitfilename}${suffix}`
+    consoleGreen('node-winit-wry: 下载二进制文件中...')
     const res = await getBinary(url)
     await writeFile(res, filename)
+    consoleGreen('node-winit-wry: 二进制文件下载完成')
   }
   return join(__dirname, filename)
 }
