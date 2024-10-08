@@ -335,7 +335,7 @@ export interface SendMessage<T extends MessageMethodKey> {
 export interface ReceiveMessage {
   id?: string
   type: 'response' | 'windowEvent'
-  method: T
+  method: string
   label: string
   data?: any
 }
