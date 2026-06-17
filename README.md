@@ -1,5 +1,4 @@
-> [!WARNING] ⚠️ 
-> 此仓库已弃用，请使用taowry(https://github.com/feitingjun/taowry.git)
+> ⚠️ 此仓库已弃用，请使用[taowry](https://github.com/feitingjun/taowry.git)
 
 # [node-winit-wry](https://github.com/feitingjun/node-winit-wry)
 在node端使用winit和wry创建webview窗口  
